@@ -1,137 +1,237 @@
-# Ares v3.0 — System Monitor
+# Ares v3.0 — Monitor del Sistema
 
-High-performance desktop system monitor for **Windows** and **macOS**, built with Python + PyQt6.  
-Redesigned from scratch for speed, clarity and a minimal dark UI.
-
----
-
-## What's new in v3.0
-
-| Feature | Detail |
-|---|---|
-| **Non-blocking data engine** | `DataWorker` QThread collects all metrics in background — UI never stalls |
-| **Unified data bus** | Single worker feeds every tab via Qt signals; no redundant psutil calls |
-| **All-at-once performance view** | All 5 resource graphs visible simultaneously (no card selection needed) |
-| **Per-core CPU bars** | Real-time colour-coded usage for every logical core |
-| **Rich process table** | ASCII CPU bar column, RSS memory in MB, incremental row updates |
-| **Smarter process diff** | Only inserts/removes changed rows — no full table rebuilds each tick |
-| **Faster refresh** | System metrics at 1 Hz; process list at 0.33 Hz — configurable |
-| **Minimal dark UI** | Deep navy/indigo palette, monospaced numbers, hairline borders |
-| **No AI dependency** | Removed Claude integration → no API key required, smaller footprint |
+Monitor de sistema de alto rendimiento para **Windows** y **macOS**, desarrollado con Python + PyQt6.
+Rediseñado desde cero para ofrecer velocidad, claridad y una interfaz oscura minimalista.
 
 ---
 
-## Architecture
+# ¿Qué hay de nuevo en la v3.0?
 
-```
+| Característica                          | Detalle                                                                                              |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| **Motor de datos no bloqueante**        | `DataWorker` (QThread) recopila todas las métricas en segundo plano — la interfaz nunca se congela   |
+| **Bus de datos unificado**              | Un único worker alimenta todas las pestañas mediante señales Qt; sin llamadas redundantes a `psutil` |
+| **Vista de rendimiento completa**       | Los 5 gráficos de recursos visibles simultáneamente (sin seleccionar tarjetas)                       |
+| **Barras CPU por núcleo**               | Uso en tiempo real para cada núcleo lógico con colores dinámicos                                     |
+| **Tabla avanzada de procesos**          | Columna ASCII de CPU, memoria RSS en MB y actualizaciones incrementales                              |
+| **Diferencial inteligente de procesos** | Solo inserta/elimina filas modificadas — evita reconstruir toda la tabla                             |
+| **Actualización más rápida**            | Métricas del sistema a 1 Hz; lista de procesos a 0.33 Hz — configurable                              |
+| **Interfaz oscura minimalista**         | Paleta navy/índigo, números monoespaciados y bordes finos                                            |
+| **Sin dependencias de IA**              | Se eliminó la integración con Claude → no requiere API Key y consume menos recursos                  |
+
+---
+
+# Arquitectura
+
+```text
 main.py
 │
-├── core/workers/data_worker.py   ← single background QThread
-│       │  emits: system_ready(dict)  process_ready(list)
+├── core/workers/data_worker.py   ← QThread principal en segundo plano
+│       │  emite: system_ready(dict)  process_ready(list)
 │       │
-├── core/data/          ← raw psutil / OS calls
-├── core/services/      ← business logic, caching, alerts
-└── core/utils/         ← formatters
+├── core/data/          ← llamadas directas a psutil / sistema operativo
+├── core/services/      ← lógica de negocio, caché y alertas
+└── core/utils/         ← formateadores y utilidades
 
 ui/
-├── main_window.py      ← sidebar nav, status bar, theme
+├── main_window.py      ← navegación lateral, barra de estado y tema
 └── tabs/
-    ├── processes_tab.py    ← incremental table, rich columns
-    ├── performance_tab.py  ← 5 live charts + core strip
-    ├── network_tab.py      ← connections + per-interface stats
-    ├── system_tab.py       ← full hw / OS / memory / disk info
-    ├── alerts_tab.py       ← threshold config + alert history
-    └── services_tab.py     ← Windows services (admin)
+    ├── processes_tab.py    ← tabla incremental y columnas avanzadas
+    ├── performance_tab.py  ← 5 gráficos en vivo + núcleos CPU
+    ├── network_tab.py      ← conexiones y estadísticas por interfaz
+    ├── system_tab.py       ← información completa de hardware y SO
+    ├── alerts_tab.py       ← configuración e historial de alertas
+    └── services_tab.py     ← servicios de Windows (admin)
 ```
 
-**Dependency rule**: UI → services → data. Never skip layers.
+### Regla de dependencias
+
+```text
+UI → services → data
+```
+
+Nunca saltar capas.
 
 ---
 
-## Quick start
+# Inicio rápido
 
-### macOS / Linux
+## macOS / Linux
+
 ```bash
 git clone <repo>
 cd ares-v3
 bash run.sh
 ```
 
-### Windows
+## Windows
+
 ```bat
 run.bat
 ```
 
-### Manual
+## Manual
+
 ```bash
-python -m venv venv && source venv/bin/activate   # or .\venv\Scripts\activate
+python -m venv venv
+
+# macOS / Linux
+source venv/bin/activate
+
+# Windows
+.\venv\Scripts\activate
+
 pip install -r requirements.txt
+
 python main.py
 ```
 
 ---
 
-## Requirements
+# Requisitos
 
-- Python 3.10+
-- PyQt6 ≥ 6.4
-- psutil ≥ 5.9
-- pyqtgraph ≥ 0.13
-- Windows 10+ or macOS 10.14+
-
----
-
-## Tabs
-
-### ⚡ Processes
-- Live table with icon, PID, name, CPU %, ASCII bar, MEM %, RSS MB, threads, status
-- Incremental updates — only changed rows are modified
-- Filter by name, CPU threshold, MEM threshold, status
-- Right-click: kill, kill tree, suspend, resume, set priority, open location, details
-- Export to CSV
-
-### 📊 Performance
-- All resources visible at once: CPU, Memory, Disk, Network, GPU
-- 90-point rolling waveform graphs
-- Per-core CPU usage strip with colour coding
-- System health score 0–100
-- Disk selector + network max speed selector
-
-### 🌐 Network
-- Global bytes sent/received
-- Per-interface breakdown (up to 8 interfaces)
-- Active connection table: local/remote addr, status (colour-coded), type, PID
-- Auto-refreshes every 3 s
-
-### 🖥 System
-- Full CPU info: model, cores (physical/logical), per-core frequencies
-- Detailed memory: total, available, used, cached, swap
-- Storage: all partitions with ASCII usage bar + fstype
-- OS, hostname, architecture, boot time, uptime
-
-### 🔔 Alerts
-- Configurable thresholds: CPU, Memory, Disk, GPU (warning + critical)
-- Deduplication — same alert fires at most once per minute
-- Colour-coded history; dismiss individual or all; clear history
-
-### ⚙ Services *(Windows only)*
-- Full service list with status
-- Start / Stop (requires admin)
+* Python 3.10+
+* PyQt6 ≥ 6.4
+* psutil ≥ 5.9
+* pyqtgraph ≥ 0.13
+* Windows 10+ o macOS 10.14+
 
 ---
 
-## Performance notes
+# Pestañas
 
-| Setting | Value | Why |
-|---|---|---|
-| System metric interval | 1.0 s | Smooth graphs without overloading |
-| Process list interval | 3.0 s | psutil iteration is expensive |
-| Chart history | 90 points | ~1.5 min of history at 1 Hz |
-| Table update | Incremental diff | Avoids full repaint every tick |
-| pyqtgraph OpenGL | Off | Better compatibility across systems |
+## ⚡ Procesos
+
+* Tabla en vivo con:
+
+  * Icono
+  * PID
+  * Nombre
+  * CPU %
+  * Barra ASCII
+  * MEM %
+  * RSS MB
+  * Threads
+  * Estado
+* Actualizaciones incrementales
+* Filtros por:
+
+  * Nombre
+  * CPU
+  * Memoria
+  * Estado
+* Menú contextual:
+
+  * Kill
+  * Kill Tree
+  * Suspend
+  * Resume
+  * Cambiar prioridad
+  * Abrir ubicación
+  * Ver detalles
+* Exportación CSV
 
 ---
 
-## License
+## 📊 Rendimiento
 
-MIT — free to use, modify and distribute.
+* Todos los recursos visibles simultáneamente:
+
+  * CPU
+  * Memoria
+  * Disco
+  * Red
+  * GPU
+* Gráficos dinámicos de 90 puntos
+* Vista por núcleo CPU en tiempo real
+* Score de salud del sistema (0–100)
+* Selector de disco
+* Selector de velocidad máxima de red
+
+---
+
+## 🌐 Red
+
+* Bytes enviados/recibidos globalmente
+* Estadísticas por interfaz (hasta 8 interfaces)
+* Tabla de conexiones activas:
+
+  * Dirección local/remota
+  * Estado
+  * Tipo
+  * PID
+* Actualización automática cada 3 segundos
+
+---
+
+## 🖥 Sistema
+
+* Información completa del CPU:
+
+  * Modelo
+  * Núcleos físicos/lógicos
+  * Frecuencias por núcleo
+* Memoria detallada:
+
+  * Total
+  * Disponible
+  * Usada
+  * Caché
+  * Swap
+* Almacenamiento:
+
+  * Particiones
+  * Barra ASCII de uso
+  * Sistema de archivos
+* Sistema operativo
+* Hostname
+* Arquitectura
+* Boot time
+* Uptime
+
+---
+
+## 🔔 Alertas
+
+* Umbrales configurables:
+
+  * CPU
+  * Memoria
+  * Disco
+  * GPU
+* Niveles:
+
+  * Warning
+  * Critical
+* Deduplicación inteligente:
+
+  * La misma alerta solo aparece una vez por minuto
+* Historial con colores
+* Dismiss individual o global
+* Limpiar historial
+
+---
+
+## ⚙ Servicios *(Solo Windows)*
+
+* Lista completa de servicios
+* Estado del servicio
+* Iniciar / detener servicios *(requiere permisos de administrador)*
+
+---
+
+# Notas de rendimiento
+
+| Configuración              | Valor            | Motivo                           |
+| -------------------------- | ---------------- | -------------------------------- |
+| Intervalo métricas sistema | 1.0 s            | Gráficos fluidos sin sobrecargar |
+| Intervalo lista procesos   | 3.0 s            | `psutil` es costoso              |
+| Historial gráficos         | 90 puntos        | ~1.5 minutos de historial        |
+| Actualización tabla        | Diff incremental | Evita repaint completo           |
+| OpenGL en pyqtgraph        | Desactivado      | Mejor compatibilidad             |
+
+---
+
+# Licencia
+
+MIT — libre para usar, modificar y distribuir.
