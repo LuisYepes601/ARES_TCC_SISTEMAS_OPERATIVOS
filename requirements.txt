@@ -1,0 +1,6 @@
+anthropic>=0.40.0
+colorama==0.4.6
+numpy>=1.24
+psutil>=5.9
+PyQt6>=6.4
+pyqtgraph>=0.13
